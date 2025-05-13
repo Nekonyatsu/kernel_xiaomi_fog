@@ -3,11 +3,11 @@ name: Nekonyatsu-ネコポイ
 on:
   push:
     branches:
-      - main  
+      - main
   pull_request:
     branches:
       - main
-  workflow_dispatch:  
+  workflow_dispatch:
 
 jobs:
   build:
@@ -15,7 +15,7 @@ jobs:
 
     steps:
     - name: Clone source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Install dependencies
       run: |
@@ -34,8 +34,18 @@ jobs:
         make O=out ARCH=arm64 vendor/fog-perf_defconfig
         make -j$(nproc) O=out ARCH=arm64 CC=clang
 
-    - name: Upload zImage
-      uses: actions/upload-artifact@v2
+    - name: Create zip
+      run: |
+        mkdir -p AnyKernel3
+        cd AnyKernel3
+        wget https://github.com/osm0sis/AnyKernel3/archive/refs/heads/master.zip -O ak3.zip
+        unzip ak3.zip
+        mv ../out/arch/arm64/boot/Image.gz-dtb AnyKernel3-master/
+        cd AnyKernel3-master
+        zip -r9 ../Kernel-Nekonyatsu.zip *
+
+    - name: Upload zip
+      uses: actions/upload-artifact@v4
       with:
-        name: zImage
-        path: out/arch/arm64/boot/Image.gz-dtb
+        name: Kernel-Nekonyatsu
+        path: AnyKernel3/Kernel-Nekonyatsu.zip

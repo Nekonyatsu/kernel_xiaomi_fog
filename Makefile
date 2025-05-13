@@ -2,8 +2,8 @@
 VERSION = 4
 PATCHLEVEL = 19
 SUBLEVEL = 328
-EXTRAVERSION =
-NAME = "People's Front"
+EXTRAVERSION = -NEKONYATSU_カーネル😼
+NAME = NEKONYATSU-猫星の力
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"

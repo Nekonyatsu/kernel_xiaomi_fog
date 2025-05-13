@@ -25,8 +25,7 @@ jobs:
     # 3. Clone Clang Toolchain
     - name: Clone Clang (ZyCromerZ)
       run: |
-        git clone --depth=1 https://github.com/ZyCromerZ/Clang clang
-
+        git clone --depth=1 https://github.com/ZyCromerZ/Clang.git -b 17 ~/clang
     # 4. Build Kernel
     - name: Build Kernel
       run: |

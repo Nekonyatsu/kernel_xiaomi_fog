@@ -1,4 +1,4 @@
-name: Nekonyatsu-ネコポイ
+name: Build-Nekonyatsu-Kernel
 
 on:
   push:
@@ -12,27 +12,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout Kernel Source
     - name: Checkout kernel source
       uses: actions/checkout@v4
 
-    # 2. Install Dependencies
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y bc bison flex libssl-dev make gcc clang curl git wget zip python3 libelf-dev zstd tar
+        sudo apt install -y bc bison flex libssl-dev make gcc clang curl git wget zip python3 libelf-dev zstd
 
-    # 3. Setup Neutron Clang
-    - name: Setup Neutron Clang
+    - name: Setup Neutron Clang 05012024
       run: |
-        curl -L -o neutron-clang.tar.zst https://gitlab.com/clangsantoni/neutron-clang/-/archive/05012024/neutron-clang-05012024.tar.zst
         mkdir -p ~/clang
-        tar --use-compress-program=unzstd -xvf neutron-clang.tar.zst -C ~/clang --strip-components=1
+        curl -L -o neutron.tar.zst https://github.com/Neutron-Toolchains/clang-build/releases/download/05012024/neutron-clang-05012024.tar.zst
+        tar --use-compress-program=unzstd -xvf neutron.tar.zst -C ~/clang --strip-components=1
         echo "PATH=$HOME/clang/bin:$PATH" >> $GITHUB_ENV
 
-    # 4. Build Kernel
     - name: Build Kernel
       run: |
+        export PATH=$HOME/clang/bin:$PATH
         export ARCH=arm64
         export SUBARCH=arm64
         export KBUILD_BUILD_USER="Nekonyatsu"
@@ -49,16 +46,14 @@ jobs:
           OBJDUMP=llvm-objdump \
           CLANG_TRIPLE=aarch64-linux-gnu-
 
-    # 5. Package dengan AnyKernel3
-    - name: Package kernel with AnyKernel3
+    - name: Package with AnyKernel3
       run: |
         git clone --depth=1 https://github.com/osm0sis/AnyKernel3
         cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/ || cp out/arch/arm64/boot/Image.gz AnyKernel3/
         cd AnyKernel3
         zip -r9 ../Nekonyatsu-Kernel.zip *
 
-    # 6. Upload Artifact
-    - name: Upload zip
+    - name: Upload Kernel Zip
       uses: actions/upload-artifact@v4
       with:
         name: Nekonyatsu-Kernel

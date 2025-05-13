@@ -1,4 +1,4 @@
-name: Nekonyatsu-ネコポイ
+name: Nekonyatsu
 
 on:
   push:
@@ -12,32 +12,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout Kernel Source
     - name: Checkout kernel source
       uses: actions/checkout@v4
 
-    # 2. Install Dependencies
     - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y bc bison flex libssl-dev make gcc clang curl git wget zip python3 libelf-dev
 
-    # 3. Setup Clang Toolchain
     - name: Setup Clang (ZyCromerZ 18.1.7)
       run: |
         mkdir -p $HOME/clang
         curl -L -o clang.tar.gz "https://github.com/ZyCromerZ/Clang/releases/download/18.1.7/Clang-18.1.7.tar.gz"
         tar -C $HOME/clang --strip-components=1 -xzf clang.tar.gz
 
-    # 4. Build Kernel
     - name: Build Kernel
       run: |
         export PATH="$HOME/clang/bin:$PATH"
         export ARCH=arm64
         export KBUILD_BUILD_USER=Nekonyatsu
         export KBUILD_BUILD_HOST=GitHubActions
-        
-        make O=out ARCH=arm64 vendor/fog-perf_defconfig
+
+        make O=out ARCH=arm64 LLVM=1 vendor/fog-perf_defconfig
         make -j$(nproc) O=out ARCH=arm64 \
           LLVM=1 \
           CC=clang \
@@ -49,15 +45,14 @@ jobs:
           OBJDUMP=llvm-objdump \
           CLANG_TRIPLE=aarch64-linux-gnu-
 
-    # 5. Package dengan AnyKernel3
     - name: Package kernel with AnyKernel3
       run: |
         git clone --depth=1 https://github.com/osm0sis/AnyKernel3
+        ls out/arch/arm64/boot/
         cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/ || cp out/arch/arm64/boot/Image.gz AnyKernel3/
         cd AnyKernel3
         zip -r9 ../Nekonyatsu-Kernel.zip *
 
-    # 6. Upload Artifact
     - name: Upload zip
       uses: actions/upload-artifact@v4
       with:

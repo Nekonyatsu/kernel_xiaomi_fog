@@ -22,27 +22,34 @@ jobs:
         sudo apt update
         sudo apt install -y bc bison flex libssl-dev make gcc clang curl git wget zip python3
 
-    - name: Clone Proton-Clang
+    - name: Setup Clang (ZyCromerZ 18.1.7)
       run: |
-        git clone --depth=1 https://github.com/kdrag0n/proton-clang.git ~/clang
+        mkdir -p ~/clang
+        wget https://github.com/ZyCromerZ/Clang/releases/download/18.1.7-clang/Clang-18.1.7.tar.gz
+        tar -C ~/clang --strip-components=1 -xf Clang-18.1.7.tar.gz
 
     - name: Build Kernel
       run: |
         export PATH=~/clang/bin:$PATH
         export ARCH=arm64
         export SUBARCH=arm64
+        export KBUILD_BUILD_USER=Nekonyatsu
+        export KBUILD_BUILD_HOST=GitHubActions
         make O=out ARCH=arm64 vendor/fog-perf_defconfig
-        make -j$(nproc) O=out ARCH=arm64 CC=clang
+        make -j$(nproc) O=out ARCH=arm64 \
+          CC=clang \
+          CROSS_COMPILE=~/clang/bin/aarch64-linux-gnu- \
+          CROSS_COMPILE_ARM32=~/clang/bin/arm-linux-gnueabi-
 
-    - name: Create flashable zip with AnyKernel3
+    - name: Package kernel with AnyKernel3
       run: |
-        git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
+        git clone --depth=1 https://github.com/osm0sis/AnyKernel3
         cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
         cd AnyKernel3
-        zip -r9 ../Kernel-Nekonyatsu.zip *
+        zip -r9 ../Nekonyatsu-Kernel.zip *
 
     - name: Upload zip
       uses: actions/upload-artifact@v4
       with:
-        name: Kernel-Nekonyatsu
-        path: Kernel-Nekonyatsu.zip
+        name: Nekonyatsu-Kernel
+        path: Nekonyatsu-Kernel.zip

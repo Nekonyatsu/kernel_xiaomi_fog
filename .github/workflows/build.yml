@@ -1,10 +1,6 @@
-name: Nekonyatsu-ネコポイ
+name: Build Kernel (No KSU)
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -12,32 +8,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout Kernel Source
-    - name: Checkout kernel source
+    - name: Checkout source
       uses: actions/checkout@v4
 
-    # 2. Install Dependencies
     - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y bc bison flex libssl-dev make gcc clang curl git wget zip python3 libelf-dev
 
-    # 3. Setup Clang Toolchain (Tested - Proton Clang from PixelOS)
-    - name: Setup Proton Clang (PixelOS)
+    - name: Setup Clang (Google AOSP)
       run: |
-        mkdir -p $HOME/clang
-        curl -LO https://gitlab.com/PixelOS-Devices/playgroundtc/-/archive/20.1.1/playgroundtc-20.1.1.tar.gz
-        tar -xf playgroundtc-20.1.1.tar.gz
-        mv playgroundtc-20.1.1 $HOME/clang
+        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 -b master clang-aosp
+        mkdir -p ~/clang
+        cp -r clang-aosp/clang-r*/. ~/clang
 
-    # 4. Build Kernel
-    - name: Build Kernel
+    - name: Build kernel
       run: |
         export PATH="$HOME/clang/bin:$PATH"
         export ARCH=arm64
         export KBUILD_BUILD_USER=Nekonyatsu
         export KBUILD_BUILD_HOST=GitHubActions
-        
+
         make O=out ARCH=arm64 vendor/fog-perf_defconfig
         make -j$(nproc) O=out ARCH=arm64 \
           LLVM=1 \
@@ -50,16 +41,14 @@ jobs:
           OBJDUMP=llvm-objdump \
           CLANG_TRIPLE=aarch64-linux-gnu-
 
-    # 5. Package dengan AnyKernel3
-    - name: Package kernel with AnyKernel3
+    - name: Pack with AnyKernel3
       run: |
         git clone --depth=1 https://github.com/osm0sis/AnyKernel3
         cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/ || cp out/arch/arm64/boot/Image.gz AnyKernel3/
         cd AnyKernel3
         zip -r9 ../Nekonyatsu-Kernel.zip *
 
-    # 6. Upload Artifact
-    - name: Upload zip
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: Nekonyatsu-Kernel

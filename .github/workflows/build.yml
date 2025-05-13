@@ -1,7 +1,12 @@
-name: Kernel Build
+name: Nekonyatsu-ネコポイ
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main  # atau nama branch yang kamu gunakan
+  pull_request:
+    branches:
+      - main  # atau nama branch yang kamu gunakan
 
 jobs:
   build:
@@ -24,7 +29,7 @@ jobs:
         export PATH=~/clang/bin:$PATH
         export ARCH=arm64
         export SUBARCH=arm64
-        make O=out ARCH=arm64 fog_defconfig
+        make O=out ARCH=arm64 vendor/fog-perf_defconfig
         make -j$(nproc) O=out ARCH=arm64 CC=clang
 
     - name: Upload zImage

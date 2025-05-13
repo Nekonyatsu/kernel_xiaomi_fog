@@ -1,10 +1,6 @@
-name: Nekonyatsu-ネコポイ
+name: Build KernelSU Kernel
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -12,51 +8,64 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout Kernel Source
-    - name: Checkout kernel source
-      uses: actions/checkout@v4
+    - name: Checkout Kernel Source
+      uses: actions/checkout@v3
 
-    # 2. Install Dependencies
-    - name: Install dependencies
+    - name: Set up environment
       run: |
         sudo apt update
-        sudo apt install -y bc bison flex libssl-dev make gcc clang curl git wget zip python3 libelf-dev
+        sudo apt install -y git wget curl build-essential bc libncurses-dev flex bison openssl libssl-dev \
+                            ccache libelf-dev libudev-dev libpci-dev libiberty-dev python3 python3-pip zip
 
-    # 3. Clone Clang Toolchain
-    - name: Clone Clang (ZyCromerZ)
+    - name: Clone Clang
       run: |
-        git clone --depth=1 https://github.com/ZyCromerZ/Clang.git -b 17 ~/clang
-    # 4. Build Kernel
+        mkdir clang && cd clang
+        wget https://github.com/ZyCromerZ/Clang/releases/download/17.0.2-20231016-release/Clang-17.0.2-20231016.tar.gz
+        tar -xf Clang-17.0.2-20231016.tar.gz
+        echo "CLANG_PATH=$(pwd)" >> $GITHUB_ENV
+
+    - name: Inject KernelSU
+      run: |
+        git clone --depth=1 -b main https://github.com/KernelSU/KernelSU
+        rm -rf KernelSU/.git
+        mv KernelSU kernel/KernelSU
+        echo -e "\nKERNELSU := true" >> Makefile
+
+    - name: Make bengal_defconfig
+      run: |
+        export PATH=$CLANG_PATH/clang/bin:$PATH
+        export ARCH=arm64
+        export SUBARCH=arm64
+        make O=out ARCH=arm64 bengal_defconfig
+
     - name: Build Kernel
       run: |
-        export PATH="$GITHUB_WORKSPACE/clang/bin:$PATH"
+        export PATH=$CLANG_PATH/clang/bin:$PATH
         export ARCH=arm64
-        export KBUILD_BUILD_USER=Nekonyatsu
-        export KBUILD_BUILD_HOST=GitHubActions
-        
-        make O=out ARCH=arm64 vendor/fog-perf_defconfig
-        make -j$(nproc) O=out ARCH=arm64 \
-          LLVM=1 \
+        export SUBARCH=arm64
+        make -j$(nproc) O=out \
           CC=clang \
           LD=ld.lld \
           AR=llvm-ar \
           NM=llvm-nm \
-          STRIP=llvm-strip \
           OBJCOPY=llvm-objcopy \
           OBJDUMP=llvm-objdump \
-          CLANG_TRIPLE=aarch64-linux-gnu-
+          STRIP=llvm-strip \
+          LLVM=1 \
+          LLVM_IAS=1
 
-    # 5. Package dengan AnyKernel3
-    - name: Package kernel with AnyKernel3
+    - name: Clone AnyKernel3
       run: |
-        git clone --depth=1 https://github.com/osm0sis/AnyKernel3
-        cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/ || cp out/arch/arm64/boot/Image.gz AnyKernel3/
-        cd AnyKernel3
-        zip -r9 ../Nekonyatsu-Kernel.zip *
+        git clone https://github.com/osm0sis/AnyKernel3.git
 
-    # 6. Upload Artifact
+    - name: Copy Kernel to AnyKernel3
+      run: |
+        cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
+        cd AnyKernel3
+        zip -r9 ../KernelSU_Fog_Bengal.zip *
+
     - name: Upload zip
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
-        name: Nekonyatsu-Kernel
-        path: Nekonyatsu-Kernel.zip
+        name: KernelSU_Flashable_Zip
+        path: KernelSU_Fog_Bengal.zip

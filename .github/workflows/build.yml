@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Clone source
+    - name: Checkout kernel source
       uses: actions/checkout@v4
 
     - name: Install dependencies
@@ -22,11 +22,11 @@ jobs:
         sudo apt update
         sudo apt install -y bc bison flex libssl-dev make gcc clang curl git wget zip python3
 
-    - name: Set up compiler
+    - name: Clone Proton-Clang
       run: |
-        git clone --depth=1 https://github.com/ZyCromerZ/clang.git -b 17 ~/clang
+        git clone --depth=1 https://github.com/kdrag0n/proton-clang.git ~/clang
 
-    - name: Build kernel
+    - name: Build Kernel
       run: |
         export PATH=~/clang/bin:$PATH
         export ARCH=arm64
@@ -34,18 +34,15 @@ jobs:
         make O=out ARCH=arm64 vendor/fog-perf_defconfig
         make -j$(nproc) O=out ARCH=arm64 CC=clang
 
-    - name: Create zip
+    - name: Create flashable zip with AnyKernel3
       run: |
-        mkdir -p AnyKernel3
+        git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
+        cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
         cd AnyKernel3
-        wget https://github.com/osm0sis/AnyKernel3/archive/refs/heads/master.zip -O ak3.zip
-        unzip ak3.zip
-        mv ../out/arch/arm64/boot/Image.gz-dtb AnyKernel3-master/
-        cd AnyKernel3-master
         zip -r9 ../Kernel-Nekonyatsu.zip *
 
     - name: Upload zip
       uses: actions/upload-artifact@v4
       with:
         name: Kernel-Nekonyatsu
-        path: AnyKernel3/Kernel-Nekonyatsu.zip
+        path: Kernel-Nekonyatsu.zip

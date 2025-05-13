@@ -3,14 +3,16 @@ name: Nekonyatsu-ネコポイ
 on:
   push:
     branches:
-      - main  # atau nama branch yang kamu gunakan
+      - main  
   pull_request:
     branches:
-      - main  # atau nama branch yang kamu gunakan
+      - main
+  workflow_dispatch:  
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
     - name: Clone source
       uses: actions/checkout@v2

@@ -18,10 +18,10 @@ jobs:
           make python-is-python3 gcc clang libncurses5-dev libncursesw5-dev \
           libc6-dev libelf-dev ccache zip unzip
 
-    - name: Run build.sh
+    - name: Run kernel_build.sh
       run: |
-        chmod +x build.sh
-        ./build.sh
+        chmod +x kernel_build.sh
+        ./kernel_build.sh
 
     - name: Upload kernel zip
       uses: actions/upload-artifact@v4
